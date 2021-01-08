@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "randomcolor": "^0.6.2",
     "socket.io": "^3.0.5"
   }
 }
