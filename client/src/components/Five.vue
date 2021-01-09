@@ -1,6 +1,7 @@
 <template>
 <div class="flex flex-col justify-center m-4 p-4">
   <h1 class="text-3xl text-indigo-800">Hello!</h1>
+  <h2 class="text-xl text-indigo-600" v-if="welcome.length>0">{{welcome}}</h2>
   <div class="border flex justify-center">
     <div class="border border-indigo-800">
       <canvas id="canvas" width="400" height="400" @click="square($event)"></canvas>
@@ -28,6 +29,7 @@ export default {
     return {
       numCells:10,
       chat: "",
+      welcome: "",
       message: [],
       socket: io('http://192.168.1.6:3000'),
       ctx:null,
@@ -41,46 +43,51 @@ export default {
       }
 
   },
-  created() {
-    console.log("created");
-    },
   mounted() {
-    console.log("mounted");
     const c = document.getElementById("canvas");
     const ctx = c.getContext("2d");
     this.ctx = ctx;
-    this.canvas = c;
-    const {top,left} = c.getBoundingClientRect();
-    this.origin.x=left;
-    this.origin.y=top;
-    //clear the game
-    this.reset();
+    this.canvas = c;    
+    // listen to scroll 
+    window.addEventListener('scroll', this.handleClicks);
 
     //socket messages
     this.socket.on('welcome', (text) => {
-      console.log(text);
-      this.message.unshift(text);
+      //console.log(text);
+      this.welcome = text;
     });
     this.socket.on('message', (text) => {
-      console.log(text);
+      //console.log(text);
       this.message.unshift(text);
     });
+    this.socket.on('board', (board) => {
+      // console.log(board);
+      this.reset(board);
+    })
     this.socket.on('turn', (data) => {
-      console.log(data);
+      //console.log(data);
       const {x,y,color} = data;
       this.fillCell(x,y,color);
     })
   },
+  updated() {
+    this.handleClicks();
+  },
   methods: {
+    handleClicks() {
+    const {top,left} = this.canvas.getBoundingClientRect();
+    this.origin.x=left;
+    this.origin.y=top;
+    },
     send() {
-      console.log(this.chat);
+      // console.log(this.chat);
       if (this.chat.length > 0) {
         this.socket.emit("message", this.chat);
         this.chat = ""; //clear input 
       }
     },
     square(e) {
-      console.log(e.clientX, e.clientY);
+      // console.log([e.clientX, e.clientY], [e.screenX, e.screenY]);
       const x=e.clientX - this.origin.x;
       const y=e.clientY - this.origin.y; 
       //this.fillRect(e.clientX,e.clientY, '#ff5500');
@@ -93,6 +100,12 @@ export default {
     fillCell(x,y,color) {
       this.ctx.fillStyle=color;
       this.ctx.fillRect(x*this.cellSize, y*this.cellSize, this.cellSize, this.cellSize);
+    },
+    getCellCoordinates(x,y) {
+      return {
+        x: Math.floor(x/this.cellSize),
+        y: Math.floor(y/this.cellSize)
+      }
     },
     drawGrid() {
       //draw the grid on canvas;
@@ -109,16 +122,22 @@ export default {
     clear() {
       this.ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
     },
-    reset() {
+    reset(board) {
       this.clear();
       this.drawGrid();
+      this.renderBoard(board);
     },
-    getCellCoordinates(x,y) {
-      return {
-        x: Math.floor(x/this.cellSize),
-        y: Math.floor(y/this.cellSize)
-      }
-    },
+    renderBoard(board=[]) {
+      //forEach( callback(currentValue, index) )
+      //2D array is array of array (first rows)
+      board.forEach( (row, y) => {
+        row.forEach( (color, x) => {
+          // short for if (color) { call the function }
+          color && this.fillCell(x,y,color);
+          //console.log(x,y,color);
+        });  
+      });
+    }
   }
 }
 </script>

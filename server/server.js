@@ -5,16 +5,17 @@ const io = require('socket.io')({
     }
 });
 const randomColor = require('randomcolor');
-const createBoard = require('./game');
+const { createBoard, createCooldown } = require('./game');
 
-const {clear, getBoard, makeTurn} = createBoard(20);
- 
+const { clear, getBoard, makeTurn} = createBoard(10);
+const cooldown = createCooldown(2000); //wait 2 sec every turn
+
 io.on('connection', socket => {
     const color = randomColor();
     const now = new Date();
     console.log(`Connected ${socket.id} at ${now}`);
-    socket.emit("welcome", `${now.toLocaleTimeString()}: Welcome! your ID is: ${socket.id}`);
-    socket.emit("board", getBoard());
+    socket.emit("welcome", `${now.toLocaleTimeString()}: Welcome! Your ID is: ${socket.id}`);
+    io.emit("board", getBoard());
 
     socket.on("message", text => {
         const now = new Date();
@@ -23,12 +24,21 @@ io.on('connection', socket => {
     });
     
     socket.on("turn", ({x,y}) => {
-        makeTurn(x,y,color);
-        io.emit("turn", {x,y,color});
+        if (cooldown()) {
+            // console.log(`Turn for ${socket.id}: ${x}  ${y}`);
+            const now = new Date();
+            const winner = makeTurn(x,y,color);
+            io.emit("turn", {x,y,color});
+            if (winner) {
+                socket.emit("message", `${now.toLocaleTimeString()}: Congratulations! You won!`);
+                io.emit("message", `${now.toLocaleTimeString()}: Game over... new turn!`);
+                io.emit("board");
+                clear(); //clear the board 
+            }
+        }
     });
 
     socket.on('disconnect', () => {
-        socket.emit("clear", clear());
         console.log("Goodbye!");
     })
 });
