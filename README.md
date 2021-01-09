@@ -2,9 +2,9 @@
 
 Based on [this video](https://www.youtube.com/watch?v=NvkM1immvWo)
 
-Added (on the Client side):
-- TailwindCSS 
+### Added (on the Client side):
 - VueJS 3
+- TailwindCSS 
 
 
 
