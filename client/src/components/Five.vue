@@ -31,7 +31,7 @@ export default {
       chat: "",
       welcome: "",
       message: [],
-      socket: io('http://192.168.1.6:3000'),
+      socket: io('http://teiga.hopto.org:3000'),
       ctx:null,
       canvas:null,
       origin:{},
